@@ -1,0 +1,7 @@
+site_name: Lacerta
+
+nav:
+  - Home: index.md
+  - Problem Statement: problem_statement.md
+  - Proposed Solution: proposed_solution.md
+theme: readthedocs
