@@ -1,4 +1,4 @@
-# 2. Problem Statement
+# Problem Statement
 
 Modern embedded systems increasingly require graphical interfaces to display system status, sensor data, and operational information in a clear and intuitive way. These interfaces are commonly referred to as **Human–Machine Interfaces (HMI)**.
 
@@ -90,3 +90,6 @@ Product development teams can use Lacerta to accelerate the creation of embedded
 ### Researchers and Educators
 
 Lacerta also serves as an educational platform for exploring digital design, embedded systems, and human–machine interface development using open-source hardware tools and reproducible ASIC design flows.
+
+
+

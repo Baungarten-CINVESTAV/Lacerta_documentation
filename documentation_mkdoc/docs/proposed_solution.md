@@ -1,4 +1,4 @@
-# 3. Proposed Solution
+# Proposed Solution
 
 Lacerta proposes an open hardware platform designed to simplify the creation of graphical interfaces for embedded systems by moving the interface generation process from software to dedicated hardware. The platform introduces a configurable interface rendering engine implemented as a custom ASIC integrated within the Caravel SoC user project area.
 
@@ -28,6 +28,13 @@ Analog signals originating from sensors such as temperature, pressure, voltage, 
 
 These signals are interpreted by the Lacerta interface engine and mapped to graphical elements such as bars, gauges, or numeric indicators, enabling real-time visualization of system parameters.
 
+<p align="center">
+<img src="../img/flow_inputs.svg">
+</p>
+<p align="center">
+<b>Figure 3.</b> Example of heterogeneous input signals connected to the Lacerta platform. Sensor data, digital signals, and external controller outputs are processed by the Lacerta engine to update graphical interface elements in real time.
+</p>
+
 ## Interface Design Workflow
 
 The Lacerta platform introduces a streamlined workflow for creating embedded graphical interfaces:
@@ -45,6 +52,14 @@ The Lacerta platform introduces a streamlined workflow for creating embedded gra
    Incoming sensor or system data dynamically updates the graphical elements rendered by the hardware.
 
 This workflow allows developers to design complex interfaces without writing extensive display control firmware.
+
+<p align="center">
+<img src="../img/Flow_interface.drawio.svg">
+</p>
+<p align="center">
+<b>Figure 4.</b> Lacerta interface creation workflow. A graphical editor is used to design custom interface layouts, which are translated into configuration data interpreted by the Lacerta hardware engine to generate the graphical display.
+</p>
+
 
 ## Open and Reproducible Architecture
 

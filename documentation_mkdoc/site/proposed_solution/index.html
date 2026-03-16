@@ -61,6 +61,10 @@
     </ul>
                 </li>
               </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../system_architecture/">System Architecture</a>
+                </li>
+              </ul>
       </div>
     </div>
     </nav>
@@ -84,7 +88,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="3-proposed-solution">3. Proposed Solution</h1>
+                <h1 id="proposed-solution">Proposed Solution</h1>
 <p>Lacerta proposes an open hardware platform designed to simplify the creation of graphical interfaces for embedded systems by moving the interface generation process from software to dedicated hardware. The platform introduces a configurable interface rendering engine implemented as a custom ASIC integrated within the Caravel SoC user project area.</p>
 <p>Instead of requiring developers to manually program complex graphical interfaces in firmware, Lacerta allows the interface to be <strong>visually designed using a graphical configuration tool</strong>. This tool enables users to place graphical elements such as buttons, bars, gauges, numeric indicators, and status displays within a virtual layout that represents the final interface.</p>
 <p>Once the interface is designed, the configuration is exported as a description file that can be loaded into the Lacerta hardware engine. The ASIC interprets this configuration and generates the graphical output in real time.</p>
@@ -103,6 +107,13 @@
 <p>Lacerta is designed to interact with both <strong>analog and digital signal sources</strong>, allowing real-world system data to be directly visualized through the graphical interface.</p>
 <p>Analog signals originating from sensors such as temperature, pressure, voltage, or current sensors can be connected through external signal conditioning or analog-to-digital conversion stages. Digital signals produced by microcontrollers, communication peripherals, or control logic can be connected directly through digital interfaces.</p>
 <p>These signals are interpreted by the Lacerta interface engine and mapped to graphical elements such as bars, gauges, or numeric indicators, enabling real-time visualization of system parameters.</p>
+<p align="center">
+<img src="../img/flow_inputs.svg">
+</p>
+<p align="center">
+<b>Figure 3.</b> Example of heterogeneous input signals connected to the Lacerta platform. Sensor data, digital signals, and external controller outputs are processed by the Lacerta engine to update graphical interface elements in real time.
+</p>
+
 <h2 id="interface-design-workflow">Interface Design Workflow</h2>
 <p>The Lacerta platform introduces a streamlined workflow for creating embedded graphical interfaces:</p>
 <ol>
@@ -124,6 +135,13 @@
 </li>
 </ol>
 <p>This workflow allows developers to design complex interfaces without writing extensive display control firmware.</p>
+<p align="center">
+<img src="../img/Flow_interface.drawio.svg">
+</p>
+<p align="center">
+<b>Figure 4.</b> Lacerta interface creation workflow. A graphical editor is used to design custom interface layouts, which are translated into configuration data interpreted by the Lacerta hardware engine to generate the graphical display.
+</p>
+
 <h2 id="open-and-reproducible-architecture">Open and Reproducible Architecture</h2>
 <p>Lacerta is designed as a <strong>fully open-source reference architecture</strong>. The project includes all required design artifacts to reproduce the system, including:</p>
 <ul>
@@ -140,6 +158,7 @@
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../problem_statement/" class="btn btn-neutral float-left" title="Problem Statement"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../system_architecture/" class="btn btn-neutral float-right" title="System Architecture">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -164,6 +183,8 @@
     
       <span><a href="../problem_statement/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
+    
+      <span><a href="../system_architecture/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
