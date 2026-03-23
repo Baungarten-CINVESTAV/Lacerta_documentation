@@ -65,6 +65,10 @@
                 <li class="toctree-l1"><a class="reference internal" href="../system_architecture/">System Architecture</a>
                 </li>
               </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../system_development/">System Development</a>
+                </li>
+              </ul>
       </div>
     </div>
     </nav>
@@ -90,7 +94,7 @@
               
                 <h1 id="proposed-solution">Proposed Solution</h1>
 <p>Lacerta proposes an open hardware platform designed to simplify the creation of graphical interfaces for embedded systems by moving the interface generation process from software to dedicated hardware. The platform introduces a configurable interface rendering engine implemented as a custom ASIC integrated within the Caravel SoC user project area.</p>
-<p>Instead of requiring developers to manually program complex graphical interfaces in firmware, Lacerta allows the interface to be <strong>visually designed using a graphical configuration tool</strong>. This tool enables users to place graphical elements such as buttons, bars, gauges, numeric indicators, and status displays within a virtual layout that represents the final interface.</p>
+<p>Instead of requiring developers to manually program complex graphical interfaces in firmware, Lacerta allows the interface to be <strong>visually designed using a graphical configuration tool</strong>. This tool enables users to place graphical elements such as buttons, bars, numeric indicators, and status displays within a virtual layout that represents the final interface.</p>
 <p>Once the interface is designed, the configuration is exported as a description file that can be loaded into the Lacerta hardware engine. The ASIC interprets this configuration and generates the graphical output in real time.</p>
 <h2 id="hardware-based-interface-rendering">Hardware-Based Interface Rendering</h2>
 <p>The Lacerta ASIC includes a hardware rendering engine capable of generating graphical interface components directly in hardware. This approach significantly reduces the computational burden typically placed on embedded processors.</p>
@@ -106,7 +110,7 @@
 <h2 id="integration-with-embedded-systems">Integration with Embedded Systems</h2>
 <p>Lacerta is designed to interact with both <strong>analog and digital signal sources</strong>, allowing real-world system data to be directly visualized through the graphical interface.</p>
 <p>Analog signals originating from sensors such as temperature, pressure, voltage, or current sensors can be connected through external signal conditioning or analog-to-digital conversion stages. Digital signals produced by microcontrollers, communication peripherals, or control logic can be connected directly through digital interfaces.</p>
-<p>These signals are interpreted by the Lacerta interface engine and mapped to graphical elements such as bars, gauges, or numeric indicators, enabling real-time visualization of system parameters.</p>
+<p>These signals are interpreted by the Lacerta interface engine and mapped to graphical elements such as bars or numeric indicators, enabling real-time visualization of system parameters.</p>
 <p align="center">
 <img src="../img/flow_inputs.svg">
 </p>
