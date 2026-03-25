@@ -59,10 +59,58 @@
                 <li class="toctree-l1 current"><a class="reference internal current" href="#">System Development</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#lacerta-rtl">Lacerta RTL</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#wb-slave-to-memory-mapped">WB Slave to Memory Mapped</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#wb-slave-to-readwrite-ports">WB Slave to Read/Write Ports</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#vga-controller">VGA Controller</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#command-arbiter-decoder">Command Arbiter Decoder</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#mask-generator">Mask Generator</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#memory-system">Memory System</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#uart">UART</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#lacerta-verification">Lacerta Verification</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#wb-slave-to-memory-mapped_1">WB Slave to Memory Mapped</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#wb-slave-to-readwrite-ports_1">WB Slave to Read/Write Ports</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#vga-controller_1">VGA Controller</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#command-arbiter-decoder_1">Command Arbiter Decoder</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#mask-generator_1">Mask Generator</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#uart_1">UART</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#memory-system_1">Memory System</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#lacerta-layout">Lacerta Layout</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#wb-slave-to-memory-mapped_2">WB Slave to Memory Mapped</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#wb-slave-to-readwrite-ports_2">WB Slave to Read/Write Ports</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#vga-controller_2">VGA Controller</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#command-arbiter-decoder_2">Command Arbiter Decoder</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#mask-generator_2">Mask Generator</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#memory-system_2">Memory System</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#uart_2">UART</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#lacerta-gate-level-simulation">Lacerta Gate Level Simulation</a>
     </li>
@@ -97,12 +145,217 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="system-development">System Development</h1>
+<p>The development of the Lacerta platform spans the complete hardware and software realization flow, from digital design and verification to physical implementation and system-level integration. This section describes the main stages used to transform the Lacerta concept into a functional platform, including RTL design, verification, layout generation, gate-level validation, PCB development, and the creation of the interface design software.</p>
+<p>Together, these activities define the engineering workflow followed to implement, test, and deploy Lacerta as an open-source embedded graphical interface system. Each subsection highlights a different part of this process and explains how the individual development tasks contribute to the final platform.</p>
 <h2 id="lacerta-rtl">Lacerta RTL</h2>
+<p>The Lacerta RTL describes the digital implementation of the custom graphics subsystem integrated in the Caravel user project. At this level, the design is organized as a set of synthesizable hardware modules that implement communication, control, rendering, memory access, and video generation functions.</p>
+<p align="center">
+<img src="../img/lacerta_blockd2.svg">
+</p>
+<p align="center">
+<b>Figure 5.</b> Block diagram of the Lacerta ASIC inside the Caravel environment. The figure shows how a host computer or the embedded Caravel RISC-V processor sends commands through UART and Wishbone interfaces to the command arbiter, rendering logic, and memory subsystem; the updated frame data is then read by the VGA controller to drive the screen.
+</p>
+
+<p>At the top level, the Lacerta RTL is integrated in the <code>user_project_wrapper</code> module, which connects the <strong>UART</strong> interface, the <strong>Wishbone</strong> processor interface, the internal drawing engine, the memory subsystem, and the <strong>VGA</strong> output path. The design receives commands either from UART through <code>uart_ip_memory_mapped</code> or from the embedded processor through the Wishbone bus. These transactions are then routed to either the control register space through <code>wb_slave_memory_mapped</code> or to the data-transfer path through <code>wb_slave_to_mem_sys_ports</code>, depending on the address region being accessed.</p>
+<p>Inside this structure, the <code>command_arbiter_decoder</code> block interprets configuration writes, updates display timing parameters, enables or resets the processor access path, and generates the drawing-object parameters used by the rendering engine. The <code>mask_generator</code> acts as the hardware drawing core: it reads existing frame data from memory, applies object-specific mask operations, and writes the updated pixels back through the memory-system interfaces. This allows Lacerta to implement graphical-object rendering directly in hardware rather than in software.</p>
+<p>The <code>mem_sys</code> module and the underlying <code>ram</code> instance form the storage backbone of the design. They coordinate several concurrent read and write clients, including the host/UART path, the drawing engine, the VGA read path, and the Wishbone processor path, using dedicated read and write buffers together with burst-oriented pattern generators. Finally, the <code>vga_controller</code> continuously reads frame data from memory and converts it into synchronized RGB, horizontal sync, vertical sync, blanking, and pixel-clock signals, producing the final video output displayed on the monitor.</p>
+<p>The following subsections identify the main RTL blocks that compose the Lacerta design.</p>
+<h3 id="wb-slave-to-memory-mapped">WB Slave to Memory Mapped</h3>
+<p align="center">
+  <img src="../img/wb_slave_memory_mapped.drawio.svg" width="400">
+</p>
+<p align="center">
+<b>Figure 8.</b> RTL block diagram of the wb_slave_memory_mapped module, showing the Wishbone slave interface, the internal memory read/write control signals, and the acknowledge/data return path used for memory-mapped transactions.
+</p>
+
+<p>The <strong>WB Slave to Memory Mapped</strong> module implements a synchronous Wishbone slave that translates processor-side memory-mapped transactions into a simpler internal memory access interface. As defined in <code>wb_slave_memory_mapped.v</code> file, the block receives the standard Wishbone signals <code>wb_adr_i</code>, <code>wb_dat_i</code>, <code>wb_we_i</code>, <code>wb_sel_i</code>, <code>wb_stb_i</code>, and <code>wb_cyc_i</code>, and converts them into internal control signals such as <code>mem_we</code>, <code>mem_wdata</code>, <code>mem_wmask</code>, <code>mem_waddr</code>, <code>mem_re</code>, and <code>mem_raddr</code>. This makes the module a protocol bridge between the Wishbone bus and the local control/data path used inside Lacerta.</p>
+<p>For write operations, the module captures the incoming Wishbone address, write data, and byte mask, then asserts <code>mem_we</code> to request a write on the internal side. For read operations, it forwards the requested address through <code>mem_raddr</code> and asserts <code>mem_re</code> until read data becomes available. The module uses the handshake signals <code>mem_wr_data_ack</code> and <code>mem_rdy</code> to determine when an internal write or read has completed, and only then asserts the Wishbone acknowledge <code>wb_ack_o</code>. When a read completes, the returning data is copied into <code>wb_dat_o</code>, allowing the processor to retrieve the requested value through the normal Wishbone interface.</p>
+<p>In the top-level Lacerta integration, this block is instantiated as <code>wb_slave_memory_mapped_i</code> and is selected when <code>wb_transaction_type</code> routes the Wishbone access toward the MMIO control space. Its outputs are connected to the <code>command_arbiter_decoder</code>, which uses the resulting internal read and write events to update configuration registers, control signals, and system status values. The module also supports reset through both the global Wishbone reset and <code>up_soft_reset</code>, ensuring that pending read or write transactions are cleared whenever the processor-side control domain is reset.</p>
+<h3 id="wb-slave-to-readwrite-ports">WB Slave to Read/Write Ports</h3>
+<p align="center">
+  <img src="../img/wb_slave_to_mem_sys_ports.drawio.svg" width="400">
+</p>
+<p align="center">
+<b>Figure 9.</b> RTL block diagram of the wb_slave_to_mem_sys_ports module, showing how Wishbone read and write transactions are translated into memory-system pattern-generator requests, buffer accesses, and acknowledge/data-return signals.
+</p>
+
+<p>The <strong>WB Slave to Read/Write Ports</strong> module implements the Wishbone access path used when the embedded processor must directly read from or write to the Lacerta memory subsystem rather than access control registers. As defined in <code>wb_slave_to_mem_sys_ports.v</code>, this block receives standard Wishbone transactions and converts them into the burst-style interfaces used by the memory system: <code>rpg_st_addr</code>, <code>rpg_burst_length</code>, and <code>rpg_busy</code> for reads, together with <code>wpg_st_addr</code>, <code>wpg_burst_length</code>, <code>wpg_busy</code>, <code>wr_buff_wren</code>, and <code>wr_buff_wdata</code> for writes. In this way, the module serves as a protocol bridge between processor word accesses and the narrower internal memory-system ports.</p>
+<p>For write transactions, the module captures the Wishbone address and data, sets <code>wpg_st_addr</code>, forces a single-word burst through <code>wpg_burst_length</code>, and pushes the write data into the write buffer using <code>wr_buff_wren</code>. The transfer is considered complete only after the memory system responds with <code>wpg_ack</code>, at which point <code>wb_ack_o</code> is asserted back to the Wishbone master. For read transactions, the module starts a read pattern generator request by asserting <code>rpg_busy</code>, loads the requested start address, and sets <code>rpg_burst_length</code> to <code>NUM_ACCESSES</code>, which corresponds to the number of memory-system reads required to assemble one full Wishbone word. As data words become available in the read buffer, the block asserts <code>rd_buff_rden</code>, shifts the returned bytes into <code>wb_dat_o</code>, and acknowledges the Wishbone transaction only after the complete word has been reconstructed.</p>
+<p>In the top-level Lacerta integration, this module is instantiated as <code>wb_slave_to_mem_sys_ports_i</code> and is selected when <code>wb_transaction_type</code> routes accesses toward the memory-system path instead of the MMIO control path. Its address outputs are offset in <code>user_project_wrapper</code> before being connected into the shared <code>mem_sys</code> structure, allowing the processor to access the memory region used by Lacerta. The module is also gated by <code>up_en</code> and reset by <code>up_soft_reset</code>, so direct processor memory accesses are allowed only when the microprocessor interface is enabled and no pending software reset is being enforced.</p>
+<h3 id="vga-controller">VGA Controller</h3>
+<p align="center">
+  <img src="../img/vga_controller.drawio.svg" width="400">
+</p>
+<p align="center">
+<b>Figure 10.</b> RTL block diagram of the vga_controller module, showing the timing-generation logic, active-frame control, buffer read-enable path, and RGB/VGA output signals used to produce the display image.
+</p>
+
+<p>The <strong>VGA Controller</strong> module generates the video timing and pixel-output signals used to display the Lacerta framebuffer on an external monitor. As defined in <code>vga_controller.v</code>, the block receives pixel data through the <code>red</code>, <code>green</code>, and <code>blue</code> inputs together with an <code>empty</code> flag that indicates whether valid display data is available in the input buffer. It also receives configurable timing parameters through <code>hsync_act</code>, <code>hsync_deact</code>, <code>vsync_act</code>, and <code>vsync_deact</code>, allowing the active and inactive horizontal and vertical display intervals to be controlled by register values loaded elsewhere in the design.</p>
+<p>Internally, the controller derives a <code>clk_en</code> signal by dividing the 50 MHz system clock by two, producing the 25 MHz pixel-rate timing required for standard 640x480 VGA operation. Horizontal and vertical counters, <code>hcnt</code> and <code>vcnt</code>, advance only when <code>clk_en</code> is active, and they are reset at the end of each row and frame through the <code>eor</code> and <code>eof</code> conditions. From these counters, the module computes the active display regions <code>h_active</code> and <code>v_active</code>, then uses them to generate <code>h_sync</code>, <code>v_sync</code>, and <code>blank</code>. The read-enable output <code>rden</code> is asserted only when the controller is enabled, the pixel clock is active, the current position lies inside the active frame, and the input buffer is not empty, ensuring that framebuffer data is consumed only when it is actually needed for display.</p>
+<p>At the output side, the module directly forwards the input color values to <code>ored</code>, <code>ogreen</code>, and <code>oblue</code> whenever the controller is enabled; otherwise, it drives zero values. The <code>sync</code> output is tied low, and <code>oclk</code> exposes the internally generated pixel clock enable used for VGA timing. In the top-level Lacerta integration, this block is instantiated as <code>vga_controller_i</code> and is fed from the memory-system read path through <code>vctrl_buffer_empty</code> and <code>vctrl_buffer_rden</code>, while the horizontal and vertical timing parameters come from the configuration registers <code>conf_logics_0</code> and <code>conf_logics_1</code>. This makes the VGA controller the final stage of the RTL graphics pipeline, converting stored frame data into real-time display signals.</p>
+<h3 id="command-arbiter-decoder">Command Arbiter Decoder</h3>
+<p>The <strong>Command Arbiter Decoder</strong> module implements the control layer that interprets configuration and drawing commands arriving from both the UART path and the processor-side Wishbone MMIO path. As defined in <code>command_arbiter_decoder.v</code>, the block manages the internal control registers <code>conf_logics_0</code> and <code>conf_logics_1</code>, generates host-side memory access commands, prepares the parameters required by the drawing engine, and controls the enable and reset behavior of the microprocessor memory-access path. In this sense, it acts as the central command-dispatch block for the Lacerta RTL.</p>
+<p>On the UART side, the module decodes writes using <code>uart_mem_waddr</code> and maps them into specific control actions. These commands can configure the host write and read pattern generators, push data into the host write buffer, update the VGA timing registers, load the drawing-object fields <code>obj_type</code>, <code>obj_width</code>, <code>obj_height</code>, <code>obj_st_pix</code>, <code>obj_st_mask</code>, and <code>obj_value</code>, trigger the drawing engine through <code>drw_inc_start</code>, request a processor soft reset, or enable the processor-side Wishbone access path through <code>wb_slave_up_en</code>. The UART read path is simpler: <code>host_rd_buff_rdata</code> is returned directly on <code>uart_mem_rdata</code>, and <code>host_rd_buff_rden</code> is driven from <code>uart_mem_re</code>, allowing UART transactions to fetch data from the host read buffer.</p>
+<p>On the processor side, the module also decodes writes and reads arriving through the <code>wb_slave_memory_mapped</code> interface. Writes to specific memory-mapped addresses update the same control registers and drawing-object parameters used by the UART path, while reads currently expose status information such as <code>drw_inc_busy</code>. The block asserts <code>wb_slave_mem_wr_data_ack</code> and <code>wb_slave_mem_rdy</code> to complete these MMIO transactions, making the same internal configuration state accessible from the embedded processor. In addition, the module manages <code>up_soft_reset_req</code> and only asserts <code>up_soft_reset</code> when it is safe to do so, specifically when there is no pending memory-system transaction and the drawing engine is idle. This coordination ensures that control commands, drawing requests, and processor-access management are all synchronized in a single RTL block.</p>
+<p>On the processor side, the module also decodes writes and reads arriving through the <code>wb_slave_memory_mapped</code> interface. Writes to specific memory-mapped addresses update the same control registers and drawing-object parameters used by the UART path, while reads currently expose status information such as <code>drw_inc_busy</code>. The block asserts <code>wb_slave_mem_wr_data_ack</code> and <code>wb_slave_mem_rdy</code> to complete these MMIO transactions, making the same internal configuration state accessible from the embedded processor. In addition, the module manages <code>up_soft_reset_req</code> and only asserts <code>up_soft_reset</code> when it is safe to do so, specifically when there is no pending memory-system transaction and the drawing engine is idle. This coordination ensures that control commands, drawing requests, and processor-access management are all synchronized in a single RTL block.</p>
+<h3 id="mask-generator">Mask Generator</h3>
+<p align="center">
+  <img src="../img/mask_genereator.drawio.svg" width="400">
+</p>
+<p align="center">
+<b>Figure 11.</b> RTL block diagram of the mask_generator module, showing the finite-state control logic, the read and write interfaces to the memory system, and the datapath used to apply object masks and update framebuffer pixels.
+</p>
+
+<p>The <strong>Mask Generator</strong> module implements the hardware drawing engine used to modify framebuffer contents according to object parameters loaded by the command decoder. As defined in <code>mask_generator.v</code>, the block receives a <code>start</code> pulse together with the object description fields <code>obj_type</code>, <code>obj_width</code>, <code>obj_height</code>, <code>obj_st_pix</code>, <code>obj_st_mask</code>, and <code>obj_value</code>. From these inputs, it generates the memory-system read and write transactions required to update the selected region of the frame. The module exposes its internal progress through the <code>busy</code>, <code>done</code>, and <code>ostate</code> signals, making it possible to monitor the drawing process from verification or higher-level control logic.</p>
+<p>Internally, the block is implemented as a finite-state machine that performs a read-modify-write cycle on the framebuffer. When a new operation starts, it initializes the read pattern generator (<code>rpg_*</code>) and write pattern generator (<code>wpg_*</code>) addresses from the object start position and object dimensions, then processes the target region row by row. Depending on the selected <code>obj_type</code>, the module applies one of several drawing modes, including boolean objects, horizontal incremental objects, vertical incremental objects, graph objects, and mask-based objects. For mask-based objects, it first reads mask data from memory and stores it locally before applying it to the target pixels.</p>
+<p>As pixel data is returned through <code>rd_buff_rdata</code>, the module decides how to modify each bit based on the current row, column, object type, and mask contents. The updated pixel value is then written back through <code>wr_buff_wdata</code> and <code>wr_buff_wren</code>, while <code>rpg_busy</code> and <code>wpg_busy</code> remain active until the memory system acknowledges completion through <code>rpg_ack</code> and <code>wpg_ack</code>. In the top-level Lacerta integration, the block is instantiated as <code>mask_generator_i</code> and connected to dedicated read and write channels of the shared <code>mem_sys</code> module. This makes the mask generator the core hardware renderer of Lacerta, responsible for converting object-level commands into direct framebuffer updates.</p>
+<h3 id="memory-system">Memory System</h3>
+<p>The <strong>Memory System</strong> module implements the shared data path that connects the different Lacerta clients to the main framebuffer memory. At a general level, <code>mem_sys.sv</code> coordinates read and write traffic between the host/UART path, the VGA stream, the mask generator, and the processor-side access path, while exposing a single read interface and a single write interface toward the main RAM. Instead of allowing each client to access memory directly, the subsystem organizes transfers through dedicated read and write channels that are buffered and scheduled internally.</p>
+<p>The main structural blocks of this subsystem are <code>buffers</code>, <code>buffers_filler</code>, and <code>buffers_discharger</code>. The <code>buffers</code> module instantiates the FIFO storage used to decouple the clients from the main memory timing, providing independent write buffers and read buffers for each channel. On the read side, <code>buffers_filler</code> monitors the active read pattern generator requests, issues memory reads through <code>main_mem_rden</code> and <code>main_mem_rd_addr</code>, and stores the returning data into the appropriate read buffer. On the write side, <code>buffers_discharger</code> monitors the active write pattern generator requests, removes data from the write buffers, and forwards it to memory through <code>main_mem_wren</code>, <code>main_mem_wr_addr</code>, and <code>main_mem_wr_data</code>.</p>
+<p>From a functional point of view, the memory system acts as the arbitration and buffering backbone of Lacerta. Read clients provide starting addresses, burst lengths, and busy flags through the <code>rpg_*</code> signals, while write clients provide equivalent burst-control information through the <code>wpg_*</code> signals together with buffered write data. The memory system acknowledges each completed burst through <code>rpg_ack</code> and <code>wpg_ack</code>, and it uses the buffer full, empty, and half-empty signals to decide when data should be fetched from RAM or committed back to RAM. The underlying <code>ram</code> module then serves as the actual frame-storage element, while the memory system around it ensures that multiple producers and consumers can share that storage in an orderly and efficient way.</p>
+<h3 id="uart">UART</h3>
+<p>The <strong>UART</strong> block used in Lacerta is integrated through the top-level module <code>uart_ip_memory_mapped</code>, which provides a bridge between the external serial interface and the internal memory-mapped control path of the system. As defined in <code>uart_ip_memory_mapped.v</code>, this wrapper exposes a simple internal interface composed of <code>mem_we</code>, <code>mem_wdata</code>, <code>mem_waddr</code>, <code>mem_re</code>, <code>mem_raddr</code>, <code>mem_rdata</code>, and <code>mem_rdy</code>, while also connecting directly to the physical serial signals <code>rx</code> and <code>tx</code>. In this way, the UART subsystem presents incoming serial commands as internal read and write transactions that can be consumed by the rest of the Lacerta control logic.</p>
+<p>At a general level, the module is divided into two major parts. The first part, implemented by <code>uart_ip_memory_mapped_ctrl_fsm</code>, interprets the UART-accessible control and status information and converts the serially received command stream into memory-mapped operations. The second part, instantiated as <code>uart_ip</code>, implements the UART transceiver functionality itself, including transmission, reception, configuration, and status handling. By combining these two layers, the top module allows an external host to configure Lacerta, write drawing parameters, and read back status or data through a standard UART connection, while hiding the lower-level serial protocol details from the rest of the RTL.</p>
 <h2 id="lacerta-verification">Lacerta Verification</h2>
+<p>A comprehensive verification methodology was implemented to ensure the correct functionality and robustness of the Lacerta system across different levels of abstraction. The verification process was structured in a progressive manner, starting from individual IP blocks and advancing toward full system validation under realistic operating conditions.</p>
+<p>The verification flow was divided into four main stages. </p>
+<ul>
+<li>
+<p>First, IP-level verification was performed on the UART communication subsystem using a dedicated testbench. This environment incorporated a Bus Functional Model (BFM) capable of generating fully randomized transactions, allowing extensive stimulus coverage while executing real-time checks during operation. This stage ensured reliable communication behavior under diverse conditions.</p>
+</li>
+<li>
+<p>In the second stage, the memory subsystem (<em>memory_system</em>) was verified using a dedicated testbench that included non-synthesizable logic to generate randomized read and write accesses. Each module within the subsystem was equipped with dedicated checkers, and a reference model with forward-progressing checkers was used to validate data integrity and correct memory behavior throughout the transactions.</p>
+</li>
+<li>
+<p>The third stage focused on full system verification, where the Lacerta platform was exercised through UART-based transactions using the previously developed BFM. During this phase, randomized interface configurations were generated, including variations in control types and sizes under constrained random conditions. All system-level checkers remained active to ensure consistency and detect any functional discrepancies.</p>
+</li>
+<li>
+<p>In the fourth stage, system-level validation was extended by loading binary interface configurations generated by a Python-based application. This stage closely represents real-world operation, as the system processes actual interface descriptions. Additionally, these tests were also executed at the gate-level simulation (GLS) stage to verify timing-aware behavior and ensure post-synthesis correctness.</p>
+</li>
+</ul>
+<p>Beyond simulation-based verification, extensive FPGA emulation was conducted to validate the system in a hardware environment. Multiple interfaces were generated using the Python application, programmed into the Lacerta system via the UART controller, and successfully displayed on a monitor through the VGA output. This hardware validation step provided strong evidence of correct system integration and real-time performance.</p>
+<p>Overall, this multi-stage verification approach ensures high confidence in the correctness, robustness, and practical functionality of the Lacerta platform.</p>
+<h3 id="wb-slave-to-memory-mapped_1">WB Slave to Memory Mapped</h3>
+<p>The verification plan for the <strong>WB Slave to Memory Mapped</strong> block focuses on protocol correctness, proper memory-side control generation, and legal read/write handshaking.</p>
+<ol>
+<li>Verify that the Wishbone slave acknowledges only when a valid master request is active.</li>
+<li>Verify that an active Wishbone request is acknowledged within the maximum allowed number of clock cycles.</li>
+<li>Verify that <code>wb_ack_o</code> is asserted for only one clock cycle per transaction.</li>
+<li>Verify that address, data, and control signals remain stable while a request is active and has not yet been acknowledged.</li>
+<li>Verify that <code>mem_we</code> is asserted, and <code>mem_re</code> is not asserted, during Wishbone write requests.</li>
+<li>Verify that <code>mem_re</code> is asserted, and <code>mem_we</code> is not asserted, during Wishbone read requests.</li>
+<li>Verify that <code>wb_cyc_i</code> and <code>wb_stb_i</code> are deasserted only after <code>wb_ack_o</code>, preventing overlapping requests.</li>
+<li>Verify that <code>mem_waddr</code>, <code>mem_wdata</code>, and <code>mem_wmask</code> correctly reflect the Wishbone address, data, and byte-select signals during write requests.</li>
+<li>Verify that <code>mem_raddr</code> correctly reflects the Wishbone address during read requests.</li>
+<li>Verify that <code>wb_dat_o</code> returns the same data received from memory when a Wishbone read request completes.</li>
+<li>Verify that <code>mem_wr_data_ack</code> can be asserted only while a Wishbone write transaction is in progress.</li>
+<li>Verify that <code>mem_rdy</code> can be asserted only while a Wishbone read transaction is in progress.</li>
+</ol>
+<h3 id="wb-slave-to-readwrite-ports_1">WB Slave to Read/Write Ports</h3>
+<p>The verification plan for the <strong>WB Slave to Read/Write Ports</strong> block checks correct Wishbone behavior, proper coordination with the memory-system ports, and correct sequencing of read and write transactions initiated by the microprocessor side.</p>
+<ol>
+<li>Verify that the Wishbone slave acknowledges only when a valid master request is active.</li>
+<li>Verify that <code>wb_ack_o</code> is asserted for only one clock cycle per transaction.</li>
+<li>Verify that address, data, and control signals remain stable while a request is active and has not yet been acknowledged.</li>
+<li>Verify that <code>wpg_busy</code> is asserted only for Wishbone write requests and remains clear for read requests.</li>
+<li>Verify that <code>wpg_busy</code> remains asserted until <code>wpg_ack</code> is received.</li>
+<li>Verify that <code>rpg_busy</code> is asserted only for Wishbone read requests and remains clear for write requests.</li>
+<li>Verify that <code>rpg_busy</code> remains asserted until <code>rpg_ack</code> is received.</li>
+<li>Verify that <code>wb_cyc_i</code> and <code>wb_stb_i</code> are deasserted only after <code>wb_ack_o</code>, preventing overlapping requests.</li>
+<li>Verify that <code>up_en</code> does not change while a read or write process is in progress.</li>
+<li>Verify that <code>up_soft_reset</code> does not change while a read or write process is in progress.</li>
+<li>Verify that <code>wpg_st_addr</code>, <code>wpg_burst_length</code>, and <code>wr_buff_wdata</code> are correctly loaded during Wishbone write requests.</li>
+<li>Verify that <code>wpg_st_addr</code>, <code>wpg_burst_length</code>, and <code>wr_buff_wdata</code> remain stable until <code>wpg_ack</code> is asserted.</li>
+<li>Verify that <code>rpg_st_addr</code> and <code>rpg_burst_length</code> are correctly loaded during Wishbone read requests.</li>
+<li>Verify that <code>rpg_st_addr</code> and <code>rpg_burst_length</code> remain stable until <code>rpg_ack</code> is asserted.</li>
+<li>Verify that <code>wr_buff_wren</code> is asserted only during Wishbone write requests and only once per write transaction.</li>
+<li>Verify that <code>rd_buff_rden</code> is asserted only during Wishbone read requests and exactly <code>NUM_ACCESSES</code> times per read transaction.</li>
+<li>Verify that <code>rpg_ack</code> can be asserted only while a master read operation is ongoing.</li>
+<li>Verify that <code>wpg_ack</code> can be asserted only while a master write operation is ongoing.</li>
+<li>Verify that a Wishbone read transaction completes when <code>rpg_ack</code> is asserted.</li>
+<li>Verify that a Wishbone write transaction completes when <code>wpg_ack</code> is asserted.</li>
+<li>Verify that the read buffer is empty whenever no Wishbone read operation is in progress.</li>
+<li>Verify that the data returned at the end of a Wishbone read matches the data delivered by the memory system.</li>
+<li>Verify that Wishbone read and write transactions can start only when the microprocessor interface is enabled and not in soft reset.</li>
+</ol>
+<h3 id="vga-controller_1">VGA Controller</h3>
+<p>The verification plan for the <strong>VGA Controller</strong> block checks video-read behavior, RGB propagation, timing-parameter correctness, and compliance with the expected 640x480 @ 60 fps output timing.</p>
+<ol>
+<li>Verify that <code>rden</code> is not asserted when the buffer is empty.</li>
+<li>Verify that <code>rden</code> is asserted whenever the active video frame is being generated.</li>
+<li>Verify that when <code>rden</code> is asserted, the incoming red, green, and blue data are correctly propagated to <code>ored</code>, <code>ogreen</code>, and <code>oblue</code>.</li>
+<li>Verify that <code>hsync_deact</code>, <code>hsync_act</code>, <code>vsync_deact</code>, and <code>vsync_act</code> contain the expected timing values.</li>
+<li>Verify that <code>h_sync</code> has the correct period for 640x480 at 60 fps according to the active and deactivated horizontal timing constants.</li>
+<li>Verify that <code>v_sync</code> has the correct period for 640x480 at 60 fps according to the active and deactivated vertical timing constants.</li>
+<li>Verify that <code>blank</code> is asserted only when the frame is active.</li>
+<li>Verify that the output clock has an approximate frequency of 25 MHz.</li>
+</ol>
+<h3 id="command-arbiter-decoder_1">Command Arbiter Decoder</h3>
+<p>The verification plan for the <strong>Command Arbiter Decoder</strong> block checks the validity of drawing commands, busy-state behavior, and the control rules used when enabling or resetting the memory-access path.</p>
+<ol>
+<li>Verify that when <code>drw_inc_start</code> is asserted, the drawing object type is within the valid range and both object width and object height are greater than <code>MIN_OBJECT_WIDTH_HEIGHT</code>.</li>
+<li>Verify that asserting <code>drw_inc_start</code> causes <code>drw_inc_busy</code> to transition from <code>0</code> to <code>1</code>.</li>
+<li>Verify that the drawing data sent to the rendering circuit remains stable while <code>drw_inc_busy</code> is asserted.</li>
+<li>Verify that <code>drw_inc_busy</code> is not asserted for longer than <code>DRW_BUSY_TIMEOUT</code> clock cycles.</li>
+<li>Verify that <code>wb_slave_up_en</code> is asserted when the UART write command address is <code>18</code>.</li>
+<li>Verify that <code>wb_slave_up_en</code> can be deasserted only when no memory-system access transaction is in progress.</li>
+<li>Verify that <code>up_soft_reset</code> can be asserted only when no memory-system access transaction is in progress.</li>
+</ol>
+<h3 id="mask-generator_1">Mask Generator</h3>
+<p>The verification plan for the <strong>Mask Generator</strong> block validates correct start/busy sequencing and ensures that internal read/write activity occurs only while the block is actively processing a drawing operation.</p>
+<ol>
+<li>Verify that asserting <code>start</code> causes <code>busy</code> to transition from <code>0</code> to <code>1</code>.</li>
+<li>Verify that <code>start</code> cannot be asserted while <code>busy</code> or <code>done</code> is already asserted.</li>
+<li>Verify that when <code>busy</code> is deasserted, <code>rpg_busy</code> and <code>wpg_busy</code> are both low and <code>rd_buff_empty</code> is high.</li>
+<li>Verify that <code>rd_buff_rden</code> cannot be asserted when <code>rd_buff_empty</code> is high.</li>
+<li>Verify that <code>wr_buff_wren</code> cannot be asserted when <code>wr_buff_full</code> is high.</li>
+<li>Verify that <code>rpg_busy</code>, <code>wpg_busy</code>, <code>rpg_ack</code>, <code>wpg_ack</code>, <code>wr_buff_full</code>, <code>rd_buff_rden</code>, and <code>wr_buff_wren</code> can be asserted only while <code>busy</code> is high.</li>
+</ol>
+<h3 id="uart_1">UART</h3>
+<h3 id="memory-system_1">Memory System</h3>
 <h2 id="lacerta-layout">Lacerta Layout</h2>
+<h3 id="wb-slave-to-memory-mapped_2">WB Slave to Memory Mapped</h3>
+<h3 id="wb-slave-to-readwrite-ports_2">WB Slave to Read/Write Ports</h3>
+<h3 id="vga-controller_2">VGA Controller</h3>
+<h3 id="command-arbiter-decoder_2">Command Arbiter Decoder</h3>
+<h3 id="mask-generator_2">Mask Generator</h3>
+<h3 id="memory-system_2">Memory System</h3>
+<h3 id="uart_2">UART</h3>
 <h2 id="lacerta-gate-level-simulation">Lacerta Gate Level Simulation</h2>
 <h2 id="lacerta-pcb">Lacerta PCB</h2>
+<p>The <strong>Lacerta PCB</strong> provides the physical platform used to power, configure, and evaluate the Lacerta hardware. At a general level, the board brings together the Caravel device, external memory, communication interfaces, clock generation, power regulation, and display connectivity required to operate the Lacerta graphics subsystem as a complete embedded system. In addition to hosting the main integrated circuits, the board exposes test points, headers, and peripheral connectors that simplify bring-up, debugging, and laboratory validation.</p>
+<p>From the schematic point of view, the board is organized into clearly separated functional domains. These include the <strong>Caravel interface</strong>, the <strong>USB-to-serial path</strong> used for configuration and communication, the <strong>flash-memory interface</strong>, the <strong>clock-generator circuit</strong>, the <strong>power-supply section</strong>, and the <strong>display/output connectors</strong>. This partitioning makes the design easier to validate and reflects the main operational needs of Lacerta: receiving commands, storing data, accessing the Caravel platform, and driving an external display.</p>
+<p align="center">
+  <img src="../img/SCHEM.jpg" width="700">
+</p>
+<p align="center">
+<b>Figure 12.</b> Schematic of the Lacerta development board, showing the main functional blocks including the Caravel connection, USB-to-serial interface, flash memory, clock generator, power regulation, and display/output connectors.
+</p>
+
+<p>The PCB implementation translates this schematic into a compact development board that places the major components and user interfaces in accessible locations. The 3D view highlights the physical arrangement of the VGA connector, the Caravel-related devices, the USB/FTDI section, memory devices, headers, and support circuitry. This representation is useful for understanding the mechanical integration of the board and for checking connector placement, component accessibility, and assembly feasibility during the hardware-development process.</p>
+<p align="center">
+  <img src="../img/Lacerta-3D.png" width="700">
+</p>
+<p align="center">
+<b>Figure 13.</b> 3D view of the Lacerta PCB, illustrating the assembled component placement, external connectors, and overall physical organization of the development board.
+</p>
+
+<p>The routed PCB layout shows how the electrical connections between these subsystems are realized on the board. It provides a detailed view of component placement, copper routing, and board dimensions, and it reflects the practical constraints of signal integrity, power distribution, and connector accessibility. Together, the schematic, 3D rendering, and final layout document the complete PCB-development flow for Lacerta, from circuit definition to manufacturable board implementation.</p>
+<p align="center">
+  <img src="../img/Lacerta-pcb.png" width="700">
+</p>
+<p align="center">
+<b>Figure 14.</b> PCB layout of the Lacerta development board, showing the routed interconnections, component placement, and board geometry used to implement the final hardware platform.
+</p>
+
 <h2 id="lacerta-interface-design-software">Lacerta Interface Design Software</h2>
+<p>The <strong>Lacerta Interface Design Software</strong> was developed as a desktop application that allows users to create, edit, export, and deploy graphical interfaces for the Lacerta hardware platform. The current implementation is written in <strong>Python</strong> using <strong>PySide6</strong>, and its main source file, <code>main.py</code>, integrates the complete application flow, including the user interface, the graphics-editing canvas, scene serialization, export generation, and serial communication with the target hardware. The software was designed not only as a drawing tool, but as a complete front-end for the Lacerta development flow, connecting interface creation directly with hardware execution.</p>
+<p>At the architectural level, the tool is organized around a <strong>graphics-scene-based editor</strong> built with <code>QGraphicsScene</code> and <code>QGraphicsView</code>. The <code>CanvasScene</code> class manages the editable design space, including canvas size, grid display, background image support, snapping, and item placement. Individual graphical elements are represented by custom <code>IndicatorItem</code> objects, which are movable and resizable and store the properties required to reconstruct the interface later. The scene also supports grouping and a layer model, making it possible to organize complex interfaces with explicit drawing order and visibility control. This editor structure gives the application the flexibility of a general design environment while still keeping the internal representation aligned with the needs of the Lacerta hardware.</p>
+<p>One of the most important parts of the software is its <strong>indicator rendering engine</strong>. The application includes a large collection of drawing routines that render different types of interface components, such as bars, graphs, seven-segment displays, gauges, warning indicators, switches, text labels, structural elements, and geometric shapes. These drawing functions operate through Qt painting primitives and are used both for real-time visual preview inside the editor and for off-screen rendering during export. This approach allowed the development of a consistent software-side representation of the same kinds of visual elements that the Lacerta hardware is expected to display, while also enabling rapid prototyping of new interface widgets.</p>
+<p>The development of the software also included a <strong>properties and interaction layer</strong> that turns the canvas into a practical design tool. The <code>PropertiesPanel</code>, <code>PalettePanel</code>, <code>LayerPanel</code>, and related dialogs provide mechanisms for selecting indicators, editing visual properties, assigning layers, changing canvas parameters, and managing scene behavior. A toolbar and tabbed main window (<code>MainWindow</code>) complete the editing environment by providing commands for scene creation, loading, saving, export, serial connection, and upload. This overall interface design makes the application function as a lightweight CAD-style editor specialized for embedded graphical HMIs.</p>
+<p>Another major stage in the development was the creation of the <strong>serialization and export flow</strong>. Scene content is converted into structured dictionaries through helper routines such as <code>_serialize_item</code>, then saved as JSON so that the interface can be reloaded and edited later. During export, the tool generates the assets needed by the Lacerta platform, including rendered images and binary or textual data representations derived from the current scene. The export path is therefore not limited to storing editor state; it also prepares the interface information in a form that can be consumed by the Lacerta hardware and firmware flow.</p>
+<p>The software was further extended with a <strong>deployment path to hardware</strong> through serial communication. The <code>SerialLoader</code> class implements memory-oriented UART transactions that allow the application to send masks, background images, and compiled interface-related data directly to the target platform. The upload process is executed asynchronously through <code>UploadWorker</code>, preventing the graphical interface from blocking during long transfers. In this way, the software does not stop at design-time preview: it acts as the operational bridge between the interface editor and the real Lacerta system running on hardware.</p>
+<p>Finally, the development of the Lacerta Interface Design Software incorporated supporting features that improve usability and reproducibility, such as persistent settings, toolchain-path checking, scene management, canvas background handling, and multi-depth export support. Together, these elements make the application a key part of the Lacerta ecosystem: it is the environment where interfaces are conceived, visually assembled, converted into deployable assets, and finally transferred to the embedded graphics hardware for execution.</p>
               
             </div>
           </div><footer>
