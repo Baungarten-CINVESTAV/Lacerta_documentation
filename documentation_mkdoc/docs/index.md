@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="img/Logo_Black_background_white.svg" alt="Mifral logo" width="220">
+</p>
+
 # Lacerta: Open Hardware Interface Engine for Embedded Systems
 
 ![Lacerta logo](img/Lacerta2.png)
@@ -12,17 +16,16 @@ The generated interface may include visual components such as:
 
 - Buttons
 - Horizontal and vertical bars
-- Tachometers / gauges
 - Numeric indicators
 - Status indicators
 <p align="center">
-<img src="img/logos.jpeg">
+<img src="img/sample_icons.jpg">
 </p>
 <p align="center">
-<b>Figure 1.</b> Examples of graphical components supported by Lacerta, including buttons, horizontal and vertical bars, tachometers, numeric indicators, and status indicators used to visualize real-time system data.
+<b>Figure 1.</b> Examples of graphical components supported by Lacerta, including buttons, horizontal and vertical bars, numeric indicators, and status indicators used to visualize real-time system data.
 </p>
 
-The ASIC receives input data from sensors, external microcontrollers, or other embedded systems and dynamically updates the graphical elements according to the incoming data stream. Both analog and digital signals can be connected to the Lacerta platform through appropriate interface circuitry or external converters, enabling the visualization of a wide range of real-world signals. This allows physical measurements such as temperature, voltage, speed, or system status signals to be directly represented through graphical components including bars, gauges, indicators, and numeric displays.
+The ASIC receives input data from sensors, external microcontrollers, or other embedded systems and dynamically updates the graphical elements according to the incoming data stream. Both analog and digital signals can be connected to the Lacerta platform through appropriate interface circuitry or external converters, enabling the visualization of a wide range of real-world signals. This allows physical measurements such as temperature, voltage, speed, or system status signals to be directly represented through graphical components including bars, indicators, and numeric displays.
 
 <p align="center">
 <img src="img/flow1.drawio.svg">

@@ -1,83 +1,88 @@
-# System Architecture
+# System Architecture Overview
 
 The Lacerta platform consists of four major components: the **custom silicon implementation**, the **PCBA hardware**, the **firmware layer**, and the **interface design software**. Together, these elements form a complete open-source system for creating, deploying, and operating customizable embedded graphical interfaces.
 
 ## Custom Silicon (Caravel User Project)
 
-The core of the Lacerta platform is a custom ASIC implemented in the **SKY130 process** and integrated within the **Caravel user project area**. This hardware subsystem implements the graphical interface engine responsible for interpreting interface configurations, managing graphical data, and generating the video output displayed on the screen.
+The core of the Lacerta platform is a custom ASIC implemented in the **SKY130 process** and integrated inside the **Caravel user project area**. This subsystem realizes the hardware graphics engine that receives interface commands, updates the internal frame data, and generates the video stream presented on the display.
 
-The Lacerta ASIC is organized around a memory-centric architecture in which graphical instructions and interface data are stored in main memory and processed by several cooperating hardware blocks.
+The Lacerta ASIC follows a memory-centric architecture. Configuration data can be loaded from an external host through **UART** or issued internally by the embedded **Caravel RISC-V** processor. These commands are routed through the **Wishbone interconnect** to the rendering logic, which updates the frame contents stored in memory. The **VGA controller** then reads that memory and continuously converts it into the output video signal.
 
 The ASIC includes the following main modules:
 
 - UART configuration interface  
-- Embedded RISC-V control processor  
-- Wishbone master interface  
-- Display generation circuit  
+- Embedded Caravel RISC-V control processor  
+- Wishbone master and slave interfaces  
+- Command arbiter and decoder  
+- Display generation and mask-generation logic  
+- Memory subsystem and main frame memory  
 - VGA controller  
-- Interface configuration memory (main memory)  
-- Memory controller  
 
 <p align="center">
-<img src="../img/lacerta_blockd.drawio.svg">
+<img src="../img/lacerta_blockd2.svg">
 </p>
 <p align="center">
-<b>Figure 5.</b> Internal architecture of the Lacerta ASIC showing the interaction between the UART configuration interface, RISC-V control processor, display generation circuit, memory controller, and VGA controller used to render the graphical interface.
+<b>Figure 5.</b> Block diagram of the Lacerta ASIC inside the Caravel environment. The figure shows how a host computer or the embedded Caravel RISC-V processor sends commands through UART and Wishbone interfaces to the command arbiter, rendering logic, and memory subsystem; the updated frame data is then read by the VGA controller to drive the screen.
 </p>
 
 ### UART Configuration Interface
 
-The **UART interface** provides a simple communication channel used to configure the graphical interface. Through this interface, instructions describing the interface layout and graphical element parameters can be transmitted to the system and stored in main memory.
+The **UART configuration interface** provides the external entry point for loading or updating the graphical interface. A host computer can send commands, parameters, and interface data through this serial channel, allowing the system to be configured without directly modifying the hardware.
 
-This mechanism allows external tools or host systems to upload interface configurations directly to the Lacerta platform. In addition to UART-based configuration, the same process may also be performed internally by the embedded RISC-V processor.
+In the architecture shown in Figure 5, the UART block acts as a bridge between the external host and the internal control path. It forwards incoming data toward the command-processing logic, enabling interface definitions, state updates, and control values to be injected into the ASIC during operation.
 
-### Embedded RISC-V Processor
+### Embedded Caravel RISC-V Control Processor
 
-The Lacerta architecture includes a lightweight **RISC-V processor** that acts as a control host for the system. The processor is responsible for accessing the configuration memory, interpreting graphical instructions, and coordinating the operation of the display subsystem.
+The embedded **Caravel RISC-V processor** acts as the local software-controlled supervisor of the Lacerta graphics engine. It can execute firmware that interprets interface behavior, reacts to sensor or communication inputs, and generates the commands required to update the visual state of the system.
 
-The RISC-V core reads interface instructions stored in main memory and generates commands that are sent through the **Wishbone master interface** to the display generation circuit. This allows the processor to update graphical elements, manage system states, and control the rendering behavior of the interface engine.
+Rather than generating pixels directly, the processor issues transactions over the internal bus to configure the rendering blocks and memory-mapped registers. This makes the RISC-V core responsible for high-level control, while the dedicated graphics hardware performs the time-critical rendering and display tasks.
 
-### Display Generation Circuit
+### Wishbone Master and Slave Interfaces
 
-The **display circuit** is responsible for translating the graphical commands issued by the processor into visual data stored in memory. Based on the instructions received through the Wishbone interface, the display circuit writes the corresponding pixel or graphical data into the main memory.
+The **Wishbone interfaces** provide the internal communication path between the Caravel control domain and the Lacerta user-project hardware. The **Wishbone master** side is used by the embedded processor to initiate configuration and rendering transactions, while the **Wishbone slave** interfaces expose memory-mapped control and data ports inside the Lacerta ASIC.
 
-This block effectively converts high-level graphical commands into the memory representation of the interface image. By using this approach, Lacerta separates graphical command processing from the actual video signal generation.
+These interfaces allow software to write commands, set parameters, and access internal buffers using a standard bus protocol. By relying on Wishbone, the design stays modular and compatible with the Caravel integration model, while also making each hardware block accessible in a structured and reusable way.
 
-### Main Memory (Interface Frame Storage)
+### Command Arbiter and Decoder
 
-The system includes a **main memory block** that stores the graphical representation of the interface being rendered. This memory holds the frame buffer or graphical data required to produce the display output.
+The **command arbiter and decoder** receives commands arriving from the available control sources and determines how they should be executed inside the graphics engine. Its main role is to interpret the incoming transaction type, identify the target function, and route the request to the proper rendering or memory block.
 
-Both the processor and the display circuit can write graphical data into this memory, while the VGA controller reads from it to generate the final display output.
+This module also resolves control flow when multiple command sources are present, ensuring that commands are accepted in a predictable order. In practice, it serves as the control hub that translates bus-level requests into concrete operations such as drawing, updating buffers, or changing display parameters.
 
-### Memory Controller
+### Display Generation and Mask-Generation Logic
 
-The **memory controller** manages access to the main memory and arbitrates between multiple request sources, including the RISC-V processor, the display generation circuit, and the VGA controller.
+The **display generation logic** converts decoded graphical commands into modifications of the stored image representation. It produces the pixel-level or region-level updates that must be written into memory so that the requested graphical elements appear on the screen.
 
-This controller ensures that memory transactions occur in an orderly and deterministic manner while preventing access conflicts between read and write operations.
+The associated **mask-generation logic** supports selective updates by defining which portions of the frame or which pixel groups are affected by a given command. This is useful for rendering structured interface elements such as icons, bars, or indicators while avoiding unnecessary full-frame rewrites.
+
+### Memory Subsystem and Main Frame Memory
+
+The **memory subsystem** stores the graphical data used to represent the current interface image. It includes the internal memory organization, access ports, and storage structures needed to support both command-driven writes and continuous display reads.
+
+Within this subsystem, the **main frame memory** holds the active image or framebuffer that the VGA path will read for display generation. Because this memory is shared between rendering logic and video output, it forms the central data repository of the entire Lacerta graphics pipeline.
 
 ### VGA Controller
 
-The **VGA controller** is responsible for generating the video signal that drives the display. It continuously reads graphical data from the main memory and converts it into VGA-compatible pixel streams.
+The **VGA controller** is the final stage of the graphics pipeline and is responsible for transforming the stored frame data into a real-time video signal. It continuously reads the image data from memory in raster order and converts it into synchronized output timing and pixel values.
 
-The controller generates the required **horizontal and vertical synchronization signals**, along with the RGB data signals needed to display the interface on a VGA monitor. This hardware-based video generation enables Lacerta to produce real-time graphical output without requiring external graphics processors.
+This block generates the horizontal sync, vertical sync, and video color signals required by a VGA display. By separating video timing generation from the command and rendering path, Lacerta can update the interface in memory while maintaining a stable and continuous screen output.
 
-## PCBA Hardware
+## Lacerta Board
+The Lacerta Board integrates multiple subsystems including power regulation, clock generation, communication interfaces, and peripheral connectivity into a single PCB. The board enables seamless interaction between a host computer and the embedded system through a USB-to-Serial (FTDI) interface, while also supporting external programming via SPI Flash memory.
 
-The Lacerta platform also includes a custom **printed circuit board assembly (PCBA)** that supports the deployment and operation of the hardware system in a complete embedded environment.
+At its core, the board host the main SoC, exposing essential signals such as GPIOs, power rails, and communication buses. Additional components such as a MEMS oscillator provide stable timing, while voltage regulators ensure reliable power delivery. The inclusion of accessible pin headers allows flexible expansion and testing, making the platform suitable for both prototyping and educational use.
 
-A custom PCB will include:
+The system also supports graphical output through a VGA interface, enabling the development of hardware-driven user interfaces. Debugging and control are facilitated through onboard LEDs and a reset button, providing immediate feedback and system management capabilities. Overall, the board offers an integrated environment for plug and play.
 
-- Caravel development board or packaged chip  
-- VGA connector  
-- sensor interfaces  
-- microcontroller interface (UART/SPI/I2C)  
-- power management circuitry  
 
-The **Caravel development board or packaged chip** provides the hardware platform on which the Lacerta ASIC can be tested and operated.
+<p align="center">
+<img src="../img/Lacerta-3D.png">
+</p>
+<p align="center">
+<b>Figure 7.</b> 3D rendering of the Lacerta Board, illustrating component placement and layout, including the Caravel/Lacerta chip placement, voltage regulators, clock generation circuitry, SPI Flash memory interface, GPIO headers, and peripheral connectors, providing a realistic view of the assembled hardware platform.
+</p>
 
-The **VGA connector** provides the physical video output interface used to display the generated graphical HMI on an external monitor.
 
-This PCB connects sensors or microcontrollers that provide real-time data used to update the interface elements rendered by the Lacerta ASIC.
 
 ## Firmware
 
@@ -111,7 +116,7 @@ A desktop graphical tool will allow users to create custom interfaces through a 
 
 The software will export configuration files used by the hardware engine.
 
-Through this visual editor, users can place and configure graphical elements such as buttons, bars, tachometers, numeric indicators, and status displays. The tool allows the interface to be designed at a high level without requiring manual implementation of low-level graphics logic.
+Through this visual editor, users can place and configure graphical elements such as buttons, bars, numeric indicators, and status displays. The tool allows the interface to be designed at a high level without requiring manual implementation of low-level graphics logic.
 
 <p align="center">
 <img src="../img/Lacerta_GUI.jpg">

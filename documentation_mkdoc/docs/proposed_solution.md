@@ -2,7 +2,7 @@
 
 Lacerta proposes an open hardware platform designed to simplify the creation of graphical interfaces for embedded systems by moving the interface generation process from software to dedicated hardware. The platform introduces a configurable interface rendering engine implemented as a custom ASIC integrated within the Caravel SoC user project area.
 
-Instead of requiring developers to manually program complex graphical interfaces in firmware, Lacerta allows the interface to be **visually designed using a graphical configuration tool**. This tool enables users to place graphical elements such as buttons, bars, gauges, numeric indicators, and status displays within a virtual layout that represents the final interface.
+Instead of requiring developers to manually program complex graphical interfaces in firmware, Lacerta allows the interface to be **visually designed using a graphical configuration tool**. This tool enables users to place graphical elements such as buttons, bars, numeric indicators, and status displays within a virtual layout that represents the final interface.
 
 Once the interface is designed, the configuration is exported as a description file that can be loaded into the Lacerta hardware engine. The ASIC interprets this configuration and generates the graphical output in real time.
 
@@ -26,7 +26,7 @@ Lacerta is designed to interact with both **analog and digital signal sources**,
 
 Analog signals originating from sensors such as temperature, pressure, voltage, or current sensors can be connected through external signal conditioning or analog-to-digital conversion stages. Digital signals produced by microcontrollers, communication peripherals, or control logic can be connected directly through digital interfaces.
 
-These signals are interpreted by the Lacerta interface engine and mapped to graphical elements such as bars, gauges, or numeric indicators, enabling real-time visualization of system parameters.
+These signals are interpreted by the Lacerta interface engine and mapped to graphical elements such as bars or numeric indicators, enabling real-time visualization of system parameters.
 
 <p align="center">
 <img src="../img/flow_inputs.svg">

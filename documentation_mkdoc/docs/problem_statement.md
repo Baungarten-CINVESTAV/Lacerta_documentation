@@ -15,7 +15,7 @@ Examples of typical HMI visual components include:
 
 - Status indicators  
 - Numeric displays  
-- Graphical bars and gauges  
+- Graphical bars  
 - Alarms and notifications  
 - Control buttons and switches  
 
